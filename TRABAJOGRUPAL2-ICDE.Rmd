@@ -1,0 +1,87 @@
+---
+title: "Interpolación Radius 500m: Airbnb Seattle"
+author: "Me"
+date: "`r Sys.Date()`"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(sf)
+library(leaflet)
+library(dplyr)
+library(ggplot2)
+library(htmltools)
+
+# Leer los datos exportados desde Python
+radius500 <- st_read("https://github.com/m4532/corazon-de-metal/raw/refs/heads/main/Final_SeaBNB.gpkg", quiet = TRUE)
+# Asegurar que el GeoDataFrame esté en lat/lon (WGS84)
+radius500 <- st_transform(radius500, crs = 4326)
+# Crear paleta de colores
+pal <- colorNumeric("YlOrRd", domain = radius500$radius_500, na.color = "lightgrey")
+```
+
+## Column {data-width="650"}
+
+### Chart A
+
+```{r}
+# Leer tus puntos (myEstats)
+myEstats <- st_read(
+  "https://github.com/m4532/corazon-de-metal/raw/refs/heads/main/myEstats.gpkg",
+  quiet = TRUE
+) %>% st_transform(4326)
+
+leaflet(radius500) %>%
+  addProviderTiles("CartoDB.Positron") %>%
+  addPolygons(
+    fillColor = ~pal(radius_500),
+    fillOpacity = 0.7,
+    color = "white",
+    weight = 0.3,
+    popup = ~paste0("<b>Precio estimado: </b>$", round(radius_500, 2))
+  ) %>%
+  
+  addCircleMarkers(
+    data = myEstats,
+    color = "red",
+    radius = 8,
+    label = ~as.character(row_number(0)),
+    stroke = FALSE,
+    fillOpacity = 0.9
+  ) %>%
+  
+  addLegend(
+    "bottomright",
+    pal = pal, values = ~radius_500,
+    title = "Precio estimado (USD)",
+    opacity = 1
+  )
+```
+
+## Column {data-width="350"}
+
+### Chart B
+
+```{r}
+ggplot(radius500, aes(x = radius_500)) +
+geom_histogram(bins = 30, fill = "steelblue", color = "white") +
+theme_minimal() +
+labs(
+title = "Distribución de precios interpolados (radio = 500 m)",
+x = "Precio estimado ($)", y = "Frecuencia"
+)
+```
+
+```{r}
+ggplot(radius500, aes(x = radius_500)) +
+geom_histogram(bins = 30, fill = "steelblue", color = "white") +
+theme_minimal() +
+labs(
+title = "Distribución de precios interpolados (radio = 500 m)",
+x = "Precio estimado ($)", y = "Frecuencia"
+)
+```
